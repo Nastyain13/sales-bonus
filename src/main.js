@@ -70,13 +70,17 @@ function calculateBonusByProfit(index, total, seller) {
 
 
 function analyzeSalesData(data, options = {}) {  
+     if (typeof options !== 'object' || options === null) {
+    throw new Error('Должны быть объектами');
+  }
+
     if (!data
       || !Array.isArray(data.sellers) 
       || data.sellers.length===0
       || !Array.isArray(data.products)
       || data.products.length===0
       || !Array.isArray(data.purchase_records)
-      || data.purchase_records===0
+      || data.purchase_records.length===0
     ) {
         throw new Error('Некорректные входные данные');
     }
@@ -87,7 +91,10 @@ function analyzeSalesData(data, options = {}) {
         calculateBonus = calculateBonusByProfit
     } = options;
 
-    // === 3. Подготовка статистики  (перебираем продавцов из data.sellers c  помощью map(). преобразовывает  элемент старового массива в новый элемент)
+     if (typeof calculateRevenue !== 'function' || typeof calculateBonus !== 'function') {
+    throw new Error('Должны быть функциями');
+    }
+    // Подготовка статистики  (перебираем продавцов из data.sellers c  помощью map(). преобразовывает  элемент старового массива в новый элемент)
     const sellerStats = data.sellers.map(seller => ({
         seller_id: seller.id,
         name: `${seller.first_name} ${seller.last_name}`,
@@ -110,7 +117,7 @@ function analyzeSalesData(data, options = {}) {
         const seller = sellerIndex[record.seller_id];
              
          seller.sales_count += 1;
-         seller.revenue += record.total_amount;
+         
 
     
     record.items.forEach(item => {                  //   перебирает каждый товар в чеке  по артиклу sku 
@@ -119,6 +126,7 @@ function analyzeSalesData(data, options = {}) {
 
             const cost = product.purchase_price * item.quantity; // себестоимость= за сколько магазин покупает товар*количество
             const revenue = calculateRevenue(item, product); 
+            seller.revenue += revenue;
             const profit = revenue - cost; // итоговая прибыль
             
             
@@ -158,7 +166,7 @@ return sellerStats.map(seller => ({
         profit: seller.profit.toFixed(2),
         sales_count:  seller.sales_count,
         top_products: seller.top_products,
-        bonus: +seller.bonus.toFixed(2)
+        bonus: seller.bonus.toFixed(2)
     
 })); 
 
